@@ -1,9 +1,5 @@
 package com.juapk.controller;
 
-import java.io.File;
-import java.text.SimpleDateFormat;
-import java.util.Date;
-import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -17,12 +13,12 @@ import org.springframework.web.servlet.ModelAndView;
 
 import com.juapk.domain.Topic;
 import com.juapk.frame.GlobalConstants;
+import com.juapk.frame.common.DwzPageModel;
 import com.juapk.frame.common.PageModel;
-import com.juapk.frame.cos.RenamePolicyCos;
+import com.juapk.frame.common.QueryItem;
 import com.juapk.frame.exception.BaseException;
 import com.juapk.service.SoftService;
 import com.juapk.service.TopicService;
-import com.oreilly.servlet.MultipartRequest;
 
 /**
  * 项目名称：juapk
@@ -122,52 +118,36 @@ public class TopicController extends BaseController{
 	}
 	
 	/**
-	 * 添加软件类型
+	 * 专题列表
 	 * @param request
 	 * @param response
 	 */
 	@RequestMapping("/s/topicList.do")
-	public ModelAndView adminTopicList(HttpServletRequest request,HttpServletResponse response) {
+	public ModelAndView adminTopicList(HttpServletRequest request,
+			HttpServletResponse response) throws BaseException {
 		Map<String, Object> result = new HashMap<String, Object>();
-//		Date date = new Date();//获取当前时间
-//		SimpleDateFormat sdfFolder = new SimpleDateFormat("yyMM");
-//		File fileDir = new File(request.getSession().getServletContext().getRealPath("/res/uploads/"+sdfFolder.format(date)));
-//		if (!fileDir.exists()) {
-//			fileDir.mkdirs();
-//		}
-//		// 设置上传文件的大小，超过这个大小 将抛出IOException异常，默认大小是1M。
-//		int inmaxPostSize = 100 * 1024 * 1024;
-//		MultipartRequest multirequest = null;
-//		// 上传文件重命名策略
-//		RenamePolicyCos myRenamePolicyCos = new RenamePolicyCos();
-//		try {
-//			multirequest = new MultipartRequest(request, fileDir
-//					.getAbsolutePath(), inmaxPostSize, "UTF-8", myRenamePolicyCos); // UTF-8  编码模式上传文件
-//			String subject = multirequest.getParameter("subject");// 获取普通信息
-//			System.out.println(subject);
-//			Enumeration<String> filedFileNames = multirequest.getFileNames();
-//			String filedName = null;
-//			if (null != filedFileNames) {
-//				while (filedFileNames.hasMoreElements()) {
-//					filedName = filedFileNames.nextElement();// 文件文本框的名称
-//					// 获取该文件框中上传的文件，即对应到上传到服务器中的文件
-//					File uploadFile = multirequest.getFile(filedName);
-//					if (null != uploadFile && uploadFile.length() > 0) {
-//						System.out.println(uploadFile.getName());
-//						System.out.println(uploadFile.getPath());
-//						System.out.println(uploadFile.length());
-//					}
-//					// 获取未重命名的文件名称
-//					String Originalname = multirequest.getOriginalFileName(filedName);
-//					System.out.println(Originalname);
-//				}
-//			}
-//			
-//			response.getWriter().write("1");
-//		} catch (Exception e) {
-//			LOGGER.error("文件上传异常！");
-//		}
-		
+		String currentPage = request.getParameter("pageNum"); //翻页
+		String numPerPage = request.getParameter("numPerPage"); //每页数量
+		if(currentPage==null){
+			currentPage = "1";
+		}
+		int offset = 0; //0 开始翻页
+		int pageSize = 10; //默认每页数量 10
+		int currentPageInt = Integer.parseInt(currentPage);
+		if(numPerPage != null){
+			pageSize = Integer.parseInt(numPerPage);
+		}
+		offset = (currentPageInt-1)*pageSize;
+		QueryItem queryItem = new QueryItem();
+		StringBuffer sqlWhere = new StringBuffer();
+		queryItem.setOffset(offset);
+		queryItem.setPageSize(pageSize); //每页显示数量
+		queryItem.setSql(sqlWhere.toString());
+		/** 专题总记录数 */
+		int topicCount = topicService.getTopicCountByWhere(sqlWhere.toString());
+		DwzPageModel topicPageModel = new DwzPageModel(topicCount,currentPageInt,pageSize);
+		topicPageModel.setData(topicService.getTopicListByQueryItem(queryItem));
+		result.put("topicPageModel", topicPageModel);
 		return new ModelAndView("admin/admin_topic_list", result);
 	}
 	
